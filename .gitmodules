@@ -1,0 +1,3 @@
+[submodule "libooz-sys/ooz"]
+	path = libooz-sys/ooz
+	url = https://github.com/zao/ooz
