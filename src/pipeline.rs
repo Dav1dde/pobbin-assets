@@ -1,6 +1,8 @@
 use std::path::PathBuf;
 
-use crate::{image, BaseItemTypes, Bundle, BundleFs, ItemVisualIdentity};
+use crate::{
+    image, BaseItemTypes, Bundle, BundleFs, DatString, ItemVisualIdentity, UniqueStashLayout, Words,
+};
 
 pub struct Pipeline<F: BundleFs> {
     fs: F,
@@ -26,22 +28,48 @@ impl<F: BundleFs> Pipeline<F> {
         let bundle = Bundle::new(&self.fs);
         let index = bundle.index()?;
 
-        let Some(base) = index.read::<BaseItemTypes>()? else {
-            anyhow::bail!("BaseItemTypes table does not exist");
-        };
-        let Some(vis) = index.read::<ItemVisualIdentity>()? else {
-            anyhow::bail!("ItemVisualIdentity table does not exist");
-        };
+        macro_rules! read {
+            ($name:ident, $type:ty) => {
+                let Some($name) = index.read::<$type>()? else {
+                                    anyhow::bail!("{} table does not exist", stringify!($type));
+                                };
+            };
+        }
 
-        let bases = base
-            .iter()
+        read!(bases, BaseItemTypes);
+        read!(uniques, UniqueStashLayout);
+        read!(words, Words);
+        read!(vis, ItemVisualIdentity);
+
+        let bases = bases.iter().map(|base| File {
+            kind: Kind::Base,
+            id: base.id,
+            item_visual_identity: base.item_visual_identity,
+            name: base.name,
+        });
+
+        let uniques = uniques.iter().map(|unique| {
+            let name = words
+                .get(unique.words as usize)
+                .expect("word for unique")
+                .text;
+            File {
+                kind: Kind::Unique,
+                id: name,
+                item_visual_identity: unique.item_visual_identity,
+                name,
+            }
+        });
+
+        let files = bases
+            .chain(uniques)
             .filter(|f| self.selectors.iter().any(|s| s.matches(f)))
             .map(|base| {
                 let idx = base.item_visual_identity as usize;
                 (base, vis.get(idx))
             });
 
-        for (item, vis) in bases {
+        for (item, vis) in files {
             let Some(vis) = vis else {
                 tracing::warn!("item '{item:?}' has no visual identity");
                 continue;
@@ -76,7 +104,19 @@ impl<F: BundleFs> Pipeline<F> {
     }
 }
 
-pub type File<'a> = BaseItemTypes<'a>;
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Kind {
+    Base,
+    Unique,
+}
+
+#[derive(Debug)]
+pub struct File<'a> {
+    pub kind: Kind,
+    pub id: DatString<'a>,
+    pub item_visual_identity: u64,
+    pub name: DatString<'a>,
+}
 
 pub trait Matcher {
     fn matches(&self, item: &File) -> bool;
@@ -85,51 +125,5 @@ pub trait Matcher {
 impl<F: Fn(&File) -> bool> Matcher for F {
     fn matches(&self, item: &File) -> bool {
         self(item)
-    }
-}
-
-pub mod matchers {
-    use super::*;
-    use crate::DatString;
-
-    pub struct Extractor<F>(F);
-
-    impl<F> Extractor<F>
-    where
-        F: for<'a, 'b> Fn(&'a File<'b>) -> &'a DatString<'b>,
-    {
-        pub fn starts_with(
-            self,
-            prefix: &str,
-        ) -> StringMatcher<F, impl Fn(&DatString) -> bool + '_> {
-            StringMatcher {
-                extract: self.0,
-                matcher: move |s: &DatString| s.starts_with(prefix),
-            }
-        }
-    }
-
-    pub struct StringMatcher<E, M> {
-        extract: E,
-        matcher: M,
-    }
-
-    impl<E, M> StringMatcher<E, M> {}
-
-    impl<E, M> Matcher for StringMatcher<E, M>
-    where
-        E: for<'a, 'b> Fn(&'a File<'b>) -> &'a DatString<'b>,
-        M: Fn(&DatString) -> bool,
-    {
-        fn matches(&self, item: &File) -> bool {
-            (self.matcher)((self.extract)(item))
-        }
-    }
-
-    pub fn id() -> Extractor<impl for<'a, 'b> Fn(&'a File<'b>) -> &'a DatString<'b>> {
-        fn extractor<'a, 'b>(f: &'a File<'b>) -> &'a DatString<'b> {
-            &f.id
-        }
-        Extractor(extractor)
     }
 }

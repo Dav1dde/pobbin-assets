@@ -49,6 +49,9 @@ enum Action {
     /// Print the SHA-256 hash of a bundled file.
     #[bpaf(command)]
     Sha(String),
+    /// Extract a file to the current directory.
+    #[bpaf(command)]
+    Extract(String),
     /// Runs the asset pipeline.
     #[bpaf(command)]
     Assets {
@@ -86,6 +89,7 @@ fn main() -> anyhow::Result<()> {
 
     match args.action {
         Action::Sha(file) => sha(fs, &file),
+        Action::Extract(file) => extract(fs, &file),
         Action::Assets { out } => assets(fs, out),
     }
 }
@@ -94,13 +98,13 @@ fn sha<F: pobbin_assets::BundleFs>(fs: F, file: &str) -> anyhow::Result<()> {
     let bundle = pobbin_assets::Bundle::new(fs);
     let index = bundle.index()?;
 
-    let content = index
+    let contents = index
         .read_by_name(file)?
         .ok_or_else(|| anyhow::anyhow!("file {file} can not be found"))?;
 
     let sha256 = {
         let mut hasher = Sha256::new();
-        hasher.update(content);
+        hasher.update(contents);
         hasher.finalize()
     };
     println!("{sha256:x}");
@@ -108,16 +112,32 @@ fn sha<F: pobbin_assets::BundleFs>(fs: F, file: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
+fn extract<F: pobbin_assets::BundleFs>(fs: F, file: &str) -> anyhow::Result<()> {
+    let bundle = pobbin_assets::Bundle::new(fs);
+    let index = bundle.index()?;
+
+    let contents = index
+        .read_by_name(file)?
+        .ok_or_else(|| anyhow::anyhow!("file {file} can not be found"))?;
+
+    let path = std::path::PathBuf::from(file);
+    std::fs::write(path.file_name().unwrap(), contents)?;
+
+    Ok(())
+}
+
 fn assets<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow::Result<()> {
-    use pobbin_assets::matchers::id;
+    use pobbin_assets::{File, Kind};
 
     if !out.is_dir() {
         anyhow::bail!("out path '{}' is not a directory", out.display());
     }
 
     pobbin_assets::Pipeline::new(fs, out)
-        .select(id().starts_with("Metadata/Items/Armours"))
-        .select(id().starts_with("Metadata/Items/Weapons"))
+        .select(|file: &File| file.id.starts_with("Metadata/Items/Gems"))
+        .select(|file: &File| file.id.starts_with("Metadata/Items/Armours"))
+        .select(|file: &File| file.id.starts_with("Metadata/Items/Weapons"))
+        .select(|file: &File| file.kind == Kind::Unique)
         .execute()?;
 
     Ok(())

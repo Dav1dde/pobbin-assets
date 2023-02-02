@@ -8,7 +8,13 @@ const VDATA_MAGIC: &[u8] = &[0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb];
 pub struct VarDataReader<'a>(&'a [u8]);
 
 impl<'a> VarDataReader<'a> {
-    pub fn read_string(&self, offset: usize) -> DatString<'a> {
+    pub fn get_string_from(&self, loc: &[u8]) -> DatString<'a> {
+        let loc = u64::from_le_bytes(loc[0..8].try_into().unwrap());
+        self.get_string(loc)
+    }
+
+    pub fn get_string(&self, offset: u64) -> DatString<'a> {
+        let offset = offset as usize;
         let idx = self.0[offset..]
             .chunks_exact(2)
             .position(|a| a == [0, 0])

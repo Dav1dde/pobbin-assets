@@ -13,3 +13,5 @@ tmp/
 out/
 libooz-sys/ooz/
 libooz-sys/Cargo.lock
+*.webp
+*.dat64
