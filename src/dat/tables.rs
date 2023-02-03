@@ -30,6 +30,7 @@ impl<'ty> Row for BaseItemTypes<'ty> {
 pub struct ItemVisualIdentity<'a> {
     pub id: DatString<'a>,
     pub dds_file: DatString<'a>,
+    pub is_alternate_art: bool,
 }
 
 impl<'ty> Row for ItemVisualIdentity<'ty> {
@@ -41,8 +42,13 @@ impl<'ty> Row for ItemVisualIdentity<'ty> {
     fn parse<'a>(data: &'a [u8], var_data: VarDataReader<'a>) -> ItemVisualIdentity<'a> {
         let id = var_data.get_string_from(&data[0..]);
         let dds_file = var_data.get_string_from(&data[8..]);
+        let is_alternate_art = data[300] == 1;
 
-        ItemVisualIdentity { id, dds_file }
+        ItemVisualIdentity {
+            id,
+            dds_file,
+            is_alternate_art,
+        }
     }
 }
 

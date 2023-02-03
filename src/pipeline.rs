@@ -1,13 +1,15 @@
 use std::{io::Write, path::PathBuf};
 
 use crate::{
-    image, BaseItemTypes, Bundle, BundleFs, DatString, ItemVisualIdentity, UniqueStashLayout, Words,
+    image, BaseItemTypes, Bundle, BundleFs, DatString, Image, ImageError, ItemVisualIdentity,
+    UniqueStashLayout, Words,
 };
 
 pub struct Pipeline<F: BundleFs> {
     fs: F,
     out: PathBuf,
     selectors: Vec<Box<dyn Matcher>>,
+    postprocess: Vec<(Box<dyn Matcher>, Box<dyn Postprocess>)>,
 }
 
 impl<F: BundleFs> Pipeline<F> {
@@ -16,11 +18,22 @@ impl<F: BundleFs> Pipeline<F> {
             fs,
             out: out.into(),
             selectors: Vec::new(),
+            postprocess: Vec::new(),
         }
     }
 
     pub fn select(&mut self, matcher: impl Matcher + 'static) -> &mut Self {
         self.selectors.push(Box::new(matcher));
+        self
+    }
+
+    pub fn postprocess(
+        &mut self,
+        matcher: impl Matcher + 'static,
+        postprocess: impl Postprocess + 'static,
+    ) -> &mut Self {
+        self.postprocess
+            .push((Box::new(matcher), Box::new(postprocess)));
         self
     }
 
@@ -49,13 +62,19 @@ impl<F: BundleFs> Pipeline<F> {
         });
 
         let uniques = uniques.iter().map(|unique| {
+            // TODO: this is trash, vis gets quereid later again, no error handling
             let name = words
                 .get(unique.words as usize)
                 .expect("word for unique")
                 .text;
+            let id = vis
+                .get(unique.item_visual_identity as usize)
+                .expect("vis for unique")
+                .id;
+
             File {
                 kind: Kind::Unique,
-                id: name,
+                id,
                 item_visual_identity: unique.item_visual_identity,
                 name,
             }
@@ -76,6 +95,11 @@ impl<F: BundleFs> Pipeline<F> {
                 continue;
             };
 
+            if vis.is_alternate_art {
+                // Alternate art shares the name with non alternate art and would override it.
+                continue;
+            }
+
             let Ok(name) = String::try_from(&item.name) else {
                 tracing::warn!("invalid name on item '{item:?}'");
                 continue;
@@ -90,10 +114,16 @@ impl<F: BundleFs> Pipeline<F> {
                 continue;
             };
 
-            let Ok(dds) = image::Dds::try_from(&*dds) else {
+            let Ok(mut dds) = image::Dds::try_from(&*dds) else {
                 tracing::warn!("unable to read dds {dds_file}");
                 continue;
             };
+
+            for (m, pp) in &self.postprocess {
+                if m.matches(&item) {
+                    pp.postprocess(&mut dds)?;
+                }
+            }
 
             let out = self.out.join(format!("{name}.webp"));
             {
@@ -132,5 +162,15 @@ pub trait Matcher {
 impl<F: Fn(&File) -> bool> Matcher for F {
     fn matches(&self, item: &File) -> bool {
         self(item)
+    }
+}
+
+pub trait Postprocess {
+    fn postprocess(&self, image: &mut Image) -> Result<(), ImageError>;
+}
+
+impl<F: Fn(&mut Image) -> Result<(), ImageError>> Postprocess for F {
+    fn postprocess(&self, image: &mut Image) -> Result<(), ImageError> {
+        self(image)
     }
 }

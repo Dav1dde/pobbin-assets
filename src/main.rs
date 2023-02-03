@@ -127,7 +127,7 @@ fn extract<F: pobbin_assets::BundleFs>(fs: F, file: &str) -> anyhow::Result<()> 
 }
 
 fn assets<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow::Result<()> {
-    use pobbin_assets::{File, Kind};
+    use pobbin_assets::{File, Image, Kind};
 
     if !out.is_dir() {
         anyhow::bail!("out path '{}' is not a directory", out.display());
@@ -135,9 +135,20 @@ fn assets<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow:
 
     pobbin_assets::Pipeline::new(fs, out)
         .select(|file: &File| file.id.starts_with("Metadata/Items/Gems"))
+        .select(|file: &File| file.id.starts_with("Metadata/Items/Belts"))
+        .select(|file: &File| file.id.starts_with("Metadata/Items/Rings"))
+        .select(|file: &File| file.id.starts_with("Metadata/Items/Flasks"))
+        .select(|file: &File| file.id.starts_with("Metadata/Items/Amulets"))
         .select(|file: &File| file.id.starts_with("Metadata/Items/Armours"))
         .select(|file: &File| file.id.starts_with("Metadata/Items/Weapons"))
+        .select(|file: &File| file.id.starts_with("Metadata/Items/Trinkets"))
         .select(|file: &File| file.kind == Kind::Unique)
+        .postprocess(
+            |file: &File| {
+                file.id.starts_with("Metadata/Items/Flasks") || file.id.starts_with("UniqueFlask")
+            },
+            |image: &mut Image| image.flask(),
+        )
         .execute()?;
 
     Ok(())

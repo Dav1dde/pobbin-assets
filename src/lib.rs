@@ -9,6 +9,8 @@ mod utils;
 pub use self::bundle::*;
 pub use self::dat::*;
 #[cfg(feature = "pipeline")]
+pub use self::image::{Dds as Image, ImageError};
+#[cfg(feature = "pipeline")]
 pub use self::pipeline::{File, Kind, Pipeline};
 #[cfg(feature = "web")]
 pub use self::utils::latest_patch_version;
