@@ -1,4 +1,4 @@
-use std::{path::Path, sync::Once};
+use std::sync::Once;
 
 use magick_rust::{magick_wand_genesis, MagickError, MagickWand};
 
@@ -13,10 +13,8 @@ pub struct Dds {
 }
 
 impl Dds {
-    pub fn write_to_file(&self, path: &Path) -> Result<(), MagickError> {
-        // Not good, but what can you do, magick doesnt accept a path
-        self.wand
-            .write_image(path.to_str().expect("cant convert path to &str"))
+    pub fn write_blob(&self, format: &str) -> Result<Vec<u8>, MagickError> {
+        self.wand.write_image_blob(format)
     }
 }
 

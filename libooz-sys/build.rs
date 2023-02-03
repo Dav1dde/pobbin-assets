@@ -16,5 +16,6 @@ fn main() {
             "ooz/kraken.cpp",
             "ooz/lzna.cpp",
         ])
+        .include("ooz/simde/")
         .compile("libooz");
 }

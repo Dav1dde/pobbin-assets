@@ -44,7 +44,7 @@ pub struct IndexBundle<F: BundleFs> {
 
 impl<F: BundleFs> IndexBundle<F> {
     fn parse(fs: F, data: Vec<u8>) -> BundleResult<Self> {
-        tracing::info!("parsing index bundle");
+        tracing::trace!("parsing index bundle");
         let (_, ib) = parse::IndexBundle::parse(&data)?;
 
         let mut refs = HashMap::new();
@@ -62,7 +62,7 @@ impl<F: BundleFs> IndexBundle<F> {
             );
         }
 
-        tracing::info!("parsed {} files from index bundle", refs.len());
+        tracing::trace!("parsed {} files from index bundle", refs.len());
 
         Ok(Self { fs, refs })
     }
@@ -79,7 +79,7 @@ impl<F: BundleFs> IndexBundle<F> {
         };
 
         let bundle_name = format!("Bundles2/{}.bundle.bin", fref.bundle_name);
-        tracing::info!(
+        tracing::trace!(
             "reading file '{name}' from bundle '{bundle_name}' @ {} ({} bytes)",
             fref.file_offset,
             fref.file_size
@@ -87,7 +87,7 @@ impl<F: BundleFs> IndexBundle<F> {
 
         let content = decompress(&self.fs, &bundle_name, Some(fref))?;
 
-        tracing::info!(
+        tracing::trace!(
             "successfully loaded file '{name}' from bundle '{bundle_name}' with {} bytes",
             content.len()
         );

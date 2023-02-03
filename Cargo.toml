@@ -6,8 +6,9 @@ edition = "2021"
 license = "GPL-3.0-or-later"
 
 [features]
-default = ["web"]
+default = ["web", "pipeline"]
 web = ["ureq"]
+pipeline = ["magick_rust"]
 
 [dependencies]
 libooz-sys = { path = "./libooz-sys/" }
@@ -17,7 +18,7 @@ nom = "7.1"
 thiserror = "1"
 sha2 = "0.10"
 bpaf = { version = "0.7", features = ["derive"] }
-magick_rust = "0.17"
+magick_rust = { version = "0.17", optional = true }
 dashmap = "5"
 tempfile = "3"
 

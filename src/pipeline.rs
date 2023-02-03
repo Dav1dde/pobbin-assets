@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{io::Write, path::PathBuf};
 
 use crate::{
     image, BaseItemTypes, Bundle, BundleFs, DatString, ItemVisualIdentity, UniqueStashLayout, Words,
@@ -69,6 +69,7 @@ impl<F: BundleFs> Pipeline<F> {
                 (base, vis.get(idx))
             });
 
+        let mut total = 0usize;
         for (item, vis) in files {
             let Some(vis) = vis else {
                 tracing::warn!("item '{item:?}' has no visual identity");
@@ -95,10 +96,16 @@ impl<F: BundleFs> Pipeline<F> {
             };
 
             let out = self.out.join(format!("{name}.webp"));
-            dds.write_to_file(&out)?;
+            {
+                let mut out = std::fs::File::create(&out)?;
+                out.write_all(&dds.write_blob("webp")?)?;
+            }
 
-            tracing::info!("generated file '{name}' -> {}", out.display());
+            tracing::debug!("generated file '{name}' -> {}", out.display());
+            total += 1;
         }
+
+        tracing::info!("extracted a total of {total} assets");
 
         Ok(())
     }
