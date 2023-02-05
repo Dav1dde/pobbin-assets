@@ -25,7 +25,7 @@ impl<'a> VarDataReader<'a> {
 }
 
 #[derive(Copy, Clone)]
-pub struct DatString<'a>(&'a [u8]);
+pub struct DatString<'a>(pub(crate) &'a [u8]);
 
 impl<'a> DatString<'a> {
     pub fn starts_with(&self, other: &str) -> bool {

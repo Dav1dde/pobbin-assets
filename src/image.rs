@@ -35,6 +35,15 @@ impl Dds {
         Ok(())
     }
 
+    pub fn crop(&mut self, pos: (u32, u32), size: (u32, u32)) -> Result<(), MagickError> {
+        self.wand.crop_image(
+            size.0 as usize,
+            size.1 as usize,
+            pos.0 as isize,
+            pos.1 as isize,
+        )
+    }
+
     pub fn write_blob(&self, format: &str) -> Result<Vec<u8>, MagickError> {
         self.wand.write_image_blob(format)
     }
