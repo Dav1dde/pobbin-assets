@@ -35,6 +35,7 @@ pub fn filepath_hash(name: &str) -> u64 {
     hasher.finalize()
 }
 
+#[cfg(feature = "web")]
 #[allow(clippy::result_large_err)]
 pub fn latest_patch_version() -> Result<String, ureq::Error> {
     let r = ureq::get(
