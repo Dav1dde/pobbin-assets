@@ -4,10 +4,10 @@ use sha2::{Digest, Sha256};
 #[derive(Debug, Clone, Bpaf)]
 #[bpaf(options)]
 struct Args {
-    #[bpaf(external, map(Some), fallback(None))]
+    #[bpaf(external, optional)]
     fs: Option<Fs>,
 
-    #[bpaf(external, map(Some), fallback(None))]
+    #[bpaf(external, optional)]
     cache: Option<Cache>,
 
     #[bpaf(external)]
