@@ -125,13 +125,9 @@ impl<F: BundleFs> Pipeline<F> {
                 }
             }
 
-            let out = self.out.join(format!("{name}.webp"));
-            {
-                let mut out = std::fs::File::create(&out)?;
-                out.write_all(&dds.write_blob("webp")?)?;
-            }
+            self.write_image(&name, &dds)?;
 
-            tracing::debug!("generated file '{name}' -> {}", out.display());
+            tracing::debug!("generated file '{name}'");
             total += 1;
         }
 
@@ -154,6 +150,9 @@ impl<F: BundleFs> Pipeline<F> {
 
             let name = String::try_from(file.name)?;
             self.write_image(&name, &dds)?;
+
+            tracing::debug!("generated art file '{name}'");
+            total += 1;
         }
 
         tracing::info!("extracted a total of {total} assets");

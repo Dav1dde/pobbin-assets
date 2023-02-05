@@ -144,6 +144,10 @@ fn assets<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow:
         .select(|file: &File| file.id.starts_with("Metadata/Items/Trinkets"))
         .select(|file: &File| file.kind == Kind::Unique)
         .select(|file: &File| file.id.starts_with("Art/2DArt/UIImages/InGame/ItemsHeader"))
+        .select(|file: &File| {
+            file.id
+                .starts_with("Art/2DArt/UIImages/InGame/ItemsSeparator")
+        })
         .postprocess(
             |file: &File| {
                 file.id.starts_with("Metadata/Items/Flasks") || file.id.starts_with("UniqueFlask")
