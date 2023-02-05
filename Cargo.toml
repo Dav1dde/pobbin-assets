@@ -7,8 +7,8 @@ license = "GPL-3.0-or-later"
 
 [features]
 default = ["web", "pipeline"]
-web = ["ureq"]
-pipeline = ["magick_rust"]
+web = ["dep:ureq"]
+pipeline = ["dep:magick_rust"]
 
 [dependencies]
 libooz-sys = { path = "./libooz-sys/" }
