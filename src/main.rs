@@ -140,6 +140,8 @@ fn assets<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow:
         .select(|file: &File| file.id.starts_with("Metadata/Items/Flasks"))
         .select(|file: &File| file.id.starts_with("Metadata/Items/Amulets"))
         .select(|file: &File| file.id.starts_with("Metadata/Items/Armours"))
+        .select(|file: &File| file.id.starts_with("Metadata/Items/Jewels"))
+        .select(|file: &File| file.id.starts_with("Metadata/Items/Quivers"))
         .select(|file: &File| file.id.starts_with("Metadata/Items/Weapons"))
         .select(|file: &File| file.id.starts_with("Metadata/Items/Trinkets"))
         .select(|file: &File| file.kind == Kind::Unique)
@@ -147,6 +149,9 @@ fn assets<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow:
         .select(|file: &File| {
             file.id
                 .starts_with("Art/2DArt/UIImages/InGame/ItemsSeparator")
+        })
+        .select(|file: &File| {
+            file.id.starts_with("Art/2DArt/UIImages/InGame/") && file.id.ends_with("ItemSymbol")
         })
         .postprocess(
             |file: &File| {

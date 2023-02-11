@@ -28,6 +28,11 @@ impl<'a> VarDataReader<'a> {
 pub struct DatString<'a>(pub(crate) &'a [u8]);
 
 impl<'a> DatString<'a> {
+    pub fn ends_with(&self, other: &str) -> bool {
+        let mut other = other.chars().rev().fuse();
+        (&mut other).zip(self.chars_rev()).all(|(a, b)| Ok(a) == b) && other.next().is_none()
+    }
+
     pub fn starts_with(&self, other: &str) -> bool {
         let mut other = other.chars().fuse();
         (&mut other).zip(self.chars()).all(|(a, b)| Ok(a) == b) && other.next().is_none()
@@ -37,6 +42,15 @@ impl<'a> DatString<'a> {
         let u16s = self
             .0
             .chunks_exact(2)
+            .map(|c| u16::from_le_bytes([c[0], c[1]]));
+        char::decode_utf16(u16s)
+    }
+
+    fn chars_rev(&self) -> impl Iterator<Item = Result<char, std::char::DecodeUtf16Error>> + '_ {
+        let u16s = self
+            .0
+            .chunks_exact(2)
+            .rev()
             .map(|c| u16::from_le_bytes([c[0], c[1]]));
         char::decode_utf16(u16s)
     }

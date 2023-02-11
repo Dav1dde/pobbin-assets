@@ -240,6 +240,13 @@ pub enum AnyString<'a> {
 }
 
 impl<'a> AnyString<'a> {
+    pub fn ends_with(&self, suffix: &str) -> bool {
+        match self {
+            Self::String(s) => s.ends_with(suffix),
+            Self::DatString(s) => s.ends_with(suffix),
+        }
+    }
+
     pub fn starts_with(&self, prefix: &str) -> bool {
         match self {
             Self::String(s) => s.starts_with(prefix),
