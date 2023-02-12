@@ -153,6 +153,9 @@ fn assets<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow:
         .select(|file: &File| {
             file.id.starts_with("Art/2DArt/UIImages/InGame/") && file.id.ends_with("ItemSymbol")
         })
+        .rename(|file| file.id.ends_with("BootsAtlas1").then_some("TwoTonedEvEs"))
+        .rename(|file| file.id.ends_with("BootsAtlas2").then_some("TwoTonedArEv"))
+        .rename(|file| file.id.ends_with("BootsAtlas3").then_some("TowTonedArEs"))
         .postprocess(
             |file: &File| {
                 file.id.starts_with("Metadata/Items/Flasks") || file.id.starts_with("UniqueFlask")

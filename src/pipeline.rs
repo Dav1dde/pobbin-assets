@@ -5,11 +5,15 @@ use crate::{
     ItemVisualIdentity, UniqueStashLayout, Words,
 };
 
+type CowStr = Cow<'static, str>;
+type DynRenamer = dyn Fn(&File) -> Option<CowStr>;
+
 pub struct Pipeline<F: BundleFs> {
     fs: F,
     out: PathBuf,
     selectors: Vec<Box<dyn Matcher>>,
     postprocess: Vec<(Box<dyn Matcher>, Box<dyn Postprocess>)>,
+    rename: Vec<Box<DynRenamer>>,
 }
 
 impl<F: BundleFs> Pipeline<F> {
@@ -19,11 +23,21 @@ impl<F: BundleFs> Pipeline<F> {
             out: out.into(),
             selectors: Vec::new(),
             postprocess: Vec::new(),
+            rename: Vec::new(),
         }
     }
 
     pub fn select(&mut self, matcher: impl Matcher + 'static) -> &mut Self {
         self.selectors.push(Box::new(matcher));
+        self
+    }
+
+    pub fn rename<T>(&mut self, renamer: impl Fn(&File) -> Option<T> + 'static) -> &mut Self
+    where
+        T: Into<CowStr>,
+    {
+        self.rename
+            .push(Box::new(move |file| renamer(file).map(Into::into)));
         self
     }
 
@@ -122,6 +136,13 @@ impl<F: BundleFs> Pipeline<F> {
             for (m, pp) in &self.postprocess {
                 if m.matches(&item) {
                     pp.postprocess(&mut dds)?;
+                }
+            }
+
+            let mut name = Cow::Owned(name);
+            for rename in &self.rename {
+                if let Some(new_name) = rename(&item) {
+                    name = new_name
                 }
             }
 
