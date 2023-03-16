@@ -156,7 +156,7 @@ fn assets<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow:
         })
         .rename(|file| file.id.ends_with("BootsAtlas1").then_some("TwoTonedEvEs"))
         .rename(|file| file.id.ends_with("BootsAtlas2").then_some("TwoTonedArEv"))
-        .rename(|file| file.id.ends_with("BootsAtlas3").then_some("TowTonedArEs"))
+        .rename(|file| file.id.ends_with("BootsAtlas3").then_some("TwoTonedArEs"))
         .postprocess(
             |file: &File| {
                 file.id.starts_with("Metadata/Items/Flasks") || file.id.starts_with("UniqueFlask")
