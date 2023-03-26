@@ -220,7 +220,7 @@ impl<F: BundleFs> Pipeline<F> {
                     kind: Kind::Art {
                         art_file: file.to_owned(),
                         position: p1,
-                        size: (p2.0 - p1.0, p2.1 - p1.1),
+                        size: (p2.0 - p1.0 + 1, p2.1 - p1.1 + 1),
                     },
                     name: AnyString::String(Cow::Borrowed(name)),
                     id: AnyString::String(Cow::Borrowed(name)),
