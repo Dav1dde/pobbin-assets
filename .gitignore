@@ -16,3 +16,5 @@ libooz-sys/Cargo.lock
 *.webp
 *.dat64
 *.dds
+*.ttf
+*.woff2

@@ -14,6 +14,7 @@ pub struct Pipeline<F: BundleFs> {
     selectors: Vec<Box<dyn Matcher>>,
     postprocess: Vec<(Box<dyn Matcher>, Box<dyn Postprocess>)>,
     rename: Vec<Box<DynRenamer>>,
+    fonts: Vec<String>,
 }
 
 impl<F: BundleFs> Pipeline<F> {
@@ -24,7 +25,13 @@ impl<F: BundleFs> Pipeline<F> {
             selectors: Vec::new(),
             postprocess: Vec::new(),
             rename: Vec::new(),
+            fonts: Vec::new(),
         }
+    }
+
+    pub fn font(&mut self, font: impl Into<String>) -> &mut Self {
+        self.fonts.push(font.into());
+        self
     }
 
     pub fn select(&mut self, matcher: impl Matcher + 'static) -> &mut Self {
@@ -176,6 +183,18 @@ impl<F: BundleFs> Pipeline<F> {
             total += 1;
         }
 
+        for font in &self.fonts {
+            let Some(file) = index.read_by_name(font)? else {
+                tracing::warn!("font '{font}' does not exist");
+                continue;
+            };
+
+            self.write_font(font, &file)?;
+
+            tracing::debug!("generated font '{font}'");
+            total += 1;
+        }
+
         tracing::info!("extracted a total of {total} assets");
 
         Ok(())
@@ -189,6 +208,22 @@ impl<F: BundleFs> Pipeline<F> {
             let mut out = std::fs::File::create(&out)?;
             out.write_all(&dds.write_blob("webp")?)?;
         }
+        Ok(())
+    }
+
+    fn write_font(&self, name: &str, font: &[u8]) -> anyhow::Result<()> {
+        let out = self.out.join(name);
+
+        std::fs::create_dir_all(out.parent().unwrap())?;
+        {
+            let mut out = std::fs::File::create(&out)?;
+            out.write_all(font)?;
+        }
+
+        if name.ends_with(".ttf") {
+            crate::font::ttf_to_woff2(&out)?;
+        }
+
         Ok(())
     }
 

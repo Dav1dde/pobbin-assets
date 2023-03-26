@@ -134,6 +134,7 @@ fn assets<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow:
     }
 
     pobbin_assets::Pipeline::new(fs, out)
+        .font("Art/2DArt/Fonts/Fontin-SmallCaps.ttf")
         .select(|file: &File| file.id.starts_with("Metadata/Items/Gems"))
         .select(|file: &File| file.id.starts_with("Metadata/Items/Belts"))
         .select(|file: &File| file.id.starts_with("Metadata/Items/Rings"))

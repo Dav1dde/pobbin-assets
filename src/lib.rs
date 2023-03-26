@@ -1,6 +1,8 @@
 mod bundle;
 mod dat;
 #[cfg(feature = "pipeline")]
+pub(crate) mod font;
+#[cfg(feature = "pipeline")]
 pub(crate) mod image;
 #[cfg(feature = "pipeline")]
 mod pipeline;
