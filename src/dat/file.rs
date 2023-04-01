@@ -28,6 +28,10 @@ impl<'a> VarDataReader<'a> {
 pub struct DatString<'a>(pub(crate) &'a [u8]);
 
 impl<'a> DatString<'a> {
+    pub fn contains(&self, p: char) -> bool {
+        self.chars().any(|c| c == Ok(p))
+    }
+
     pub fn ends_with(&self, other: &str) -> bool {
         let mut other = other.chars().rev().fuse();
         (&mut other).zip(self.chars_rev()).all(|(a, b)| Ok(a) == b) && other.next().is_none()
@@ -60,7 +64,15 @@ impl<'a> TryFrom<&DatString<'a>> for String {
     type Error = std::char::DecodeUtf16Error;
 
     fn try_from(s: &DatString<'a>) -> Result<Self, Self::Error> {
-        s.chars().collect::<Result<String, _>>()
+        s.chars().collect::<Result<_, _>>()
+    }
+}
+
+impl<'a> TryFrom<DatString<'a>> for Cow<'static, str> {
+    type Error = std::char::DecodeUtf16Error;
+
+    fn try_from(s: DatString<'a>) -> Result<Self, Self::Error> {
+        s.chars().collect::<Result<_, _>>()
     }
 }
 

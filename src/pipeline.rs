@@ -77,9 +77,9 @@ impl<F: BundleFs> Pipeline<F> {
 
         let bases = bases.iter().map(|base| File {
             kind: Kind::Base,
-            id: AnyString::DatString(base.id),
+            id: base.id.try_into().expect("string"),
             item_visual_identity: base.item_visual_identity,
-            name: AnyString::DatString(base.name),
+            name: base.name.try_into().expect("string"),
         });
 
         let uniques = uniques.iter().map(|unique| {
@@ -95,9 +95,9 @@ impl<F: BundleFs> Pipeline<F> {
 
             File {
                 kind: Kind::Unique,
-                id: AnyString::DatString(id),
+                id: id.try_into().expect("string"),
                 item_visual_identity: unique.item_visual_identity,
-                name: AnyString::DatString(name),
+                name: name.try_into().expect("string"),
             }
         });
 
@@ -121,10 +121,6 @@ impl<F: BundleFs> Pipeline<F> {
                 continue;
             }
 
-            let Ok(name) = String::try_from(&item.name) else {
-                tracing::warn!("invalid name on item '{item:?}'");
-                continue;
-            };
             let Ok(dds_file) = String::try_from(&vis.dds_file) else {
                 tracing::warn!("invalid dds_file on item '{item:?}' and vis '{vis:?}'");
                 continue;
@@ -146,12 +142,13 @@ impl<F: BundleFs> Pipeline<F> {
                 }
             }
 
-            let mut name = Cow::Owned(name);
+            let mut name = None;
             for rename in &self.rename {
                 if let Some(new_name) = rename(&item) {
-                    name = new_name
+                    name = Some(new_name);
                 }
             }
+            let name = name.unwrap_or(item.name);
 
             self.write_image(&name, &dds)?;
 
@@ -257,16 +254,16 @@ impl<F: BundleFs> Pipeline<F> {
                         position: p1,
                         size: (p2.0 - p1.0 + 1, p2.1 - p1.1 + 1),
                     },
-                    name: AnyString::String(Cow::Borrowed(name)),
-                    id: AnyString::String(Cow::Borrowed(name)),
+                    name: Cow::Borrowed(name),
+                    id: Cow::Borrowed(name),
                     item_visual_identity: 0,
                 };
 
                 if self.selectors.iter().any(|s| s.matches(&f)) {
                     Some(File {
                         kind: f.kind,
-                        name: AnyString::String(Cow::Owned(name.to_owned())),
-                        id: AnyString::String(Cow::Owned(name.to_owned())),
+                        name: Cow::Owned(name.to_owned()),
+                        id: Cow::Owned(name.to_owned()),
                         item_visual_identity: 0,
                     })
                 } else {
@@ -290,54 +287,10 @@ pub enum Kind {
 }
 
 #[derive(Debug)]
-pub enum AnyString<'a> {
-    String(Cow<'a, str>),
-    DatString(DatString<'a>),
-}
-
-impl<'a> AnyString<'a> {
-    pub fn ends_with(&self, suffix: &str) -> bool {
-        match self {
-            Self::String(s) => s.ends_with(suffix),
-            Self::DatString(s) => s.ends_with(suffix),
-        }
-    }
-
-    pub fn starts_with(&self, prefix: &str) -> bool {
-        match self {
-            Self::String(s) => s.starts_with(prefix),
-            Self::DatString(s) => s.starts_with(prefix),
-        }
-    }
-}
-
-impl<'a> TryFrom<&AnyString<'a>> for String {
-    type Error = std::char::DecodeUtf16Error;
-
-    fn try_from(s: &AnyString<'a>) -> Result<Self, Self::Error> {
-        match s {
-            AnyString::String(s) => Ok(s.to_string()),
-            AnyString::DatString(s) => s.try_into(),
-        }
-    }
-}
-
-impl<'a> TryFrom<AnyString<'a>> for String {
-    type Error = std::char::DecodeUtf16Error;
-
-    fn try_from(s: AnyString<'a>) -> Result<Self, Self::Error> {
-        match s {
-            AnyString::String(s) => Ok(s.into_owned()),
-            AnyString::DatString(s) => (&s).try_into(),
-        }
-    }
-}
-
-#[derive(Debug)]
 pub struct File<'a> {
     pub kind: Kind,
-    pub id: AnyString<'a>,
-    pub name: AnyString<'a>,
+    pub id: Cow<'a, str>,
+    pub name: Cow<'a, str>,
     pub item_visual_identity: u64,
 }
 
