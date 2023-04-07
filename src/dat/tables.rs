@@ -9,7 +9,7 @@ pub struct BaseItemTypes<'a> {
 
 impl<'ty> Row for BaseItemTypes<'ty> {
     const FILE: &'static str = "Data/BaseItemTypes.dat64";
-    const SIZE: usize = 279;
+    const SIZE: usize = 296;
 
     type Item<'a> = BaseItemTypes<'a>;
 
