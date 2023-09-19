@@ -65,8 +65,8 @@ impl<F: BundleFs> Pipeline<F> {
         macro_rules! read {
             ($name:ident, $type:ty) => {
                 let Some($name) = index.read::<$type>()? else {
-                                    anyhow::bail!("{} table does not exist", stringify!($type));
-                                };
+                    anyhow::bail!("{} table does not exist", stringify!($type));
+                };
             };
         }
 
@@ -157,7 +157,12 @@ impl<F: BundleFs> Pipeline<F> {
         }
 
         for file in self.ui_images(&index)? {
-            let Kind::Art { art_file, position, size } = file.kind else {
+            let Kind::Art {
+                art_file,
+                position,
+                size,
+            } = file.kind
+            else {
                 unreachable!("ui images generated non art kind");
             };
 

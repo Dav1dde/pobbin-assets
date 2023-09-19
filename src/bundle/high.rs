@@ -72,7 +72,7 @@ impl<F: BundleFs> IndexBundle<F> {
     }
 
     pub fn read_by_name(&self, name: &str) -> BundleResult<Option<Vec<u8>>> {
-        let hash = crate::filepath_hash(name);
+        let hash = crate::HashStrategy::Murmur3_21_2.path(name); // TODO: make configurable
         let Some(fref) = self.refs.get(&hash) else {
             tracing::warn!("file '{name}' not found in index bundle");
             return Ok(None);

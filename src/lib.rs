@@ -2,6 +2,7 @@ mod bundle;
 mod dat;
 #[cfg(feature = "pipeline")]
 pub(crate) mod font;
+mod hash;
 #[cfg(feature = "pipeline")]
 pub(crate) mod image;
 #[cfg(feature = "pipeline")]
@@ -10,6 +11,7 @@ mod utils;
 
 pub use self::bundle::*;
 pub use self::dat::*;
+pub use self::hash::HashStrategy;
 #[cfg(feature = "pipeline")]
 pub use self::image::{Dds as Image, ImageError};
 #[cfg(feature = "pipeline")]
