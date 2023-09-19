@@ -1,13 +1,19 @@
 use super::file::VarDataReader;
 use crate::BundleFile;
 
+#[derive(Debug, thiserror::Error)]
+pub enum ParseError {
+    #[error("not enough data")]
+    NotEnoughData,
+}
+
 pub trait Row {
     const FILE: &'static str;
-    const SIZE: usize;
 
     type Item<'a>;
 
-    fn parse<'a>(data: &'a [u8], var_data: VarDataReader<'a>) -> Self::Item<'a>;
+    fn parse<'a>(data: &'a [u8], var_data: VarDataReader<'a>)
+        -> Result<Self::Item<'a>, ParseError>;
 }
 
 impl<T: Row> BundleFile for T {

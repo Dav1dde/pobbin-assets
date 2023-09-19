@@ -1,5 +1,8 @@
+use super::row::ParseError;
+
 #[inline]
 #[track_caller]
-pub fn parse_u64(data: &[u8]) -> u64 {
-    u64::from_le_bytes((&data[0..8]).try_into().unwrap())
+pub fn parse_u64(data: &[u8], idx: usize) -> Result<u64, ParseError> {
+    let data = data.get(idx..idx + 8).ok_or(ParseError::NotEnoughData)?;
+    Ok(u64::from_le_bytes(data.try_into().unwrap()))
 }

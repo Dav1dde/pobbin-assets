@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use super::Row;
+use super::{row::ParseError, utils::parse_u64, Row};
 
 const VDATA_MAGIC: &[u8] = &[0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb];
 
@@ -8,19 +8,23 @@ const VDATA_MAGIC: &[u8] = &[0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb];
 pub struct VarDataReader<'a>(&'a [u8]);
 
 impl<'a> VarDataReader<'a> {
-    pub fn get_string_from(&self, loc: &[u8]) -> DatString<'a> {
-        let loc = u64::from_le_bytes(loc[0..8].try_into().unwrap());
+    pub fn get_string_from(&self, data: &[u8], idx: usize) -> Result<DatString<'a>, ParseError> {
+        let loc = parse_u64(data, idx)?;
         self.get_string(loc)
     }
 
-    pub fn get_string(&self, offset: u64) -> DatString<'a> {
+    pub fn get_string(&self, offset: u64) -> Result<DatString<'a>, ParseError> {
         let offset = offset as usize;
         let idx = self.0[offset..]
             .chunks_exact(2)
             .position(|a| a == [0, 0])
             .map(|idx| idx * 2)
             .unwrap_or(self.0.len());
-        DatString(&self.0[offset..offset + idx])
+        let data = self
+            .0
+            .get(offset..offset + idx)
+            .ok_or(ParseError::NotEnoughData)?;
+        Ok(DatString(data))
     }
 }
 
@@ -84,6 +88,7 @@ impl<'a> std::fmt::Debug for DatString<'a> {
 
 pub struct DatFile<'a, R: Row> {
     pub row_count: usize,
+    row_size: usize,
     data: Cow<'a, [u8]>,
     boundary: usize,
     _row: std::marker::PhantomData<R>,
@@ -101,8 +106,11 @@ impl<'a, R: Row> DatFile<'a, R> {
             .position(|window| window == VDATA_MAGIC)
             .expect("magic");
 
+        let row_size = (boundary - 4) / row_count;
+
         Self {
             row_count,
+            row_size,
             data,
             boundary,
             _row: Default::default(),
@@ -112,16 +120,18 @@ impl<'a, R: Row> DatFile<'a, R> {
     pub fn iter(&self) -> impl Iterator<Item = R::Item<'_>> + '_ {
         let vdr = VarDataReader(&self.data[self.boundary..]);
         self.data[4..]
-            .chunks_exact(R::SIZE)
+            .chunks_exact(self.row_size)
             .take(self.row_count)
-            .map(move |row| R::parse(row, vdr))
+            .map(move |row| R::parse(row, vdr).unwrap()) // TODO: unwrap
     }
 
     pub fn get(&self, index: usize) -> Option<R::Item<'_>> {
-        let start = 4 + index * R::SIZE;
-        let end = start + R::SIZE;
+        let start = 4 + index * self.row_size;
+        let end = start + self.row_size;
         let vdr = VarDataReader(&self.data[self.boundary..]);
-        self.data.get(start..end).map(|row| R::parse(row, vdr))
+        self.data
+            .get(start..end)
+            .map(|row| R::parse(row, vdr).unwrap()) // TODO: unwrap
     }
 }
 
