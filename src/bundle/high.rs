@@ -1,6 +1,11 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 
-use super::{ooz, parse, BundleFs};
+use super::{
+    ooz,
+    parse::{self, PathRep},
+    BundleFs,
+};
+use crate::Discard;
 
 #[derive(Debug, thiserror::Error)]
 pub enum BundleError {
@@ -32,7 +37,11 @@ impl<F: BundleFs> Bundle<F> {
     }
 
     pub fn index(&self) -> BundleResult<IndexBundle<&F>> {
-        let index_file = decompress(&self.fs, "Bundles2/_.index.bin", None)?;
+        let file = self
+            .fs
+            .get("Bundles2/_.index.bin")
+            .map_err(BundleError::Fs)?;
+        let index_file = decompress(file, None)?;
         IndexBundle::parse(&self.fs, index_file)
     }
 }
@@ -40,12 +49,16 @@ impl<F: BundleFs> Bundle<F> {
 pub struct IndexBundle<F: BundleFs> {
     fs: F,
     refs: HashMap<u64, FileRef>,
+    reps: Vec<PathRep>,
+    data: Vec<u8>,
+    path_offset: usize,
 }
 
 impl<F: BundleFs> IndexBundle<F> {
     fn parse(fs: F, data: Vec<u8>) -> BundleResult<Self> {
         tracing::trace!("parsing index bundle");
-        let (_, ib) = parse::IndexBundle::parse(&data)?;
+        let (rem, ib) = parse::IndexBundle::parse(&data)?;
+        let path_offset = unsafe { rem.as_ptr().offset_from(data.as_ptr()) } as usize;
 
         let mut refs = HashMap::new();
 
@@ -64,7 +77,13 @@ impl<F: BundleFs> IndexBundle<F> {
 
         tracing::trace!("parsed {} files from index bundle", refs.len());
 
-        Ok(Self { fs, refs })
+        Ok(Self {
+            fs,
+            refs,
+            reps: ib.reps,
+            data,
+            path_offset,
+        })
     }
 
     pub fn read<T: BundleFile>(&self) -> BundleResult<Option<T::Output>> {
@@ -85,7 +104,8 @@ impl<F: BundleFs> IndexBundle<F> {
             fref.file_size
         );
 
-        let content = decompress(&self.fs, &bundle_name, Some(fref))?;
+        let file = self.fs.get(&bundle_name).map_err(BundleError::Fs)?;
+        let content = decompress(file, Some(fref))?;
 
         tracing::trace!(
             "successfully loaded file '{name}' from bundle '{bundle_name}' with {} bytes",
@@ -93,6 +113,83 @@ impl<F: BundleFs> IndexBundle<F> {
         );
 
         Ok(Some(content))
+    }
+
+    // TODO this needs to yield `Item = Result<String>`
+    pub fn files(&self) -> BundleResult<impl Iterator<Item = String> + '_> {
+        let data = Rc::new(decompress(&mut &self.data[self.path_offset..], None)?);
+
+        // TODO: this could be one iterator owning reps and data without Rc but this is good enough
+        // for now
+        let files = self.reps.iter().flat_map(move |rep| {
+            let data = data.clone();
+            RepIter::new(data, rep)
+        });
+
+        Ok(files)
+    }
+}
+
+struct RepIter {
+    data: Rc<Vec<u8>>,
+    current: usize,
+    end: usize,
+    base_phase: bool,
+    bases: Vec<String>,
+}
+
+impl RepIter {
+    fn new(data: Rc<Vec<u8>>, rep: &PathRep) -> Self {
+        Self {
+            data,
+            current: rep.payload_offset as usize,
+            end: rep.payload_offset as usize + rep.payload_size as usize,
+            base_phase: false,
+            bases: Vec::new(),
+        }
+    }
+}
+
+impl Iterator for RepIter {
+    type Item = String;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut slice = &self.data[self.current..self.end];
+
+        while !slice.is_empty() {
+            // TODO: proper parsing
+            let cmd = u32::from_le_bytes(slice[..4].try_into().unwrap());
+            slice = &slice[4..];
+            self.current += 4;
+
+            if cmd == 0 {
+                self.base_phase = !self.base_phase;
+                if self.base_phase {
+                    self.bases.clear();
+                }
+                continue;
+            }
+
+            // TODO panics everywhere
+            let i = slice.iter().position(|&b| b == 0).unwrap();
+            let s = std::str::from_utf8(&slice[..i]).unwrap(); // TODO
+            slice = &slice[i + 1..];
+            self.current += i + 1;
+
+            let s = if let Some(val) = self.bases.get(cmd as usize - 1) {
+                val.clone() + s
+            } else {
+                s.to_owned()
+            };
+
+            if self.base_phase {
+                self.bases.push(s);
+            } else {
+                return Some(s);
+            }
+        }
+
+        None
     }
 }
 
@@ -111,9 +208,10 @@ struct FileRef {
     file_size: usize,
 }
 
-fn decompress<F: BundleFs>(fs: &F, name: &str, fref: Option<&FileRef>) -> BundleResult<Vec<u8>> {
-    let mut file = fs.get(name).map_err(BundleError::Fs)?;
-
+fn decompress(
+    mut file: (impl std::io::Read + Discard),
+    fref: Option<&FileRef>,
+) -> BundleResult<Vec<u8>> {
     let head = parse::Head::read(&mut file).map_err(|err| match err {
         parse::ReadErr::Io(err) => BundleError::Io(err),
         parse::ReadErr::Parse(err) => err.into(),

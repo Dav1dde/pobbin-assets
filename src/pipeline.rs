@@ -185,6 +185,24 @@ impl<F: BundleFs> Pipeline<F> {
             total += 1;
         }
 
+        // TODO: this only works for dds atm, change it when necessary
+        for file in self.bundle_files(&index)? {
+            let Some(dds) = index.read_by_name(&file.id)? else {
+                tracing::warn!("file '{}' does not exist", file.id);
+                continue;
+            };
+
+            let Ok(dds) = image::Dds::try_from(&*dds) else {
+                tracing::warn!("unable to read dds {}", file.id);
+                continue;
+            };
+
+            self.write_image(file.id.strip_suffix(".dds").unwrap_or(&file.id), &dds)?;
+
+            tracing::debug!("generated file '{}'", file.id);
+            total += 1;
+        }
+
         for font in &self.fonts {
             let Some(file) = index.read_by_name(font)? else {
                 tracing::warn!("font '{font}' does not exist");
@@ -278,6 +296,23 @@ impl<F: BundleFs> Pipeline<F> {
             .collect::<Vec<_>>()
             .into_iter())
     }
+
+    fn bundle_files<'a, F2: BundleFs>(
+        &'a self,
+        index: &'a IndexBundle<F2>,
+    ) -> anyhow::Result<impl Iterator<Item = File<'static>> + '_> {
+        let files = index
+            .files()?
+            .map(|file| File {
+                kind: Kind::File,
+                id: Cow::Owned(file.clone()),
+                name: Cow::Owned(file),
+                item_visual_identity: 0,
+            })
+            .filter(|file| self.selectors.iter().any(|s| s.matches(file)));
+
+        Ok(files)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -289,6 +324,7 @@ pub enum Kind {
     },
     Base,
     Unique,
+    File,
 }
 
 #[derive(Debug)]
@@ -296,7 +332,7 @@ pub struct File<'a> {
     pub kind: Kind,
     pub id: Cow<'a, str>,
     pub name: Cow<'a, str>,
-    pub item_visual_identity: u64,
+    pub item_visual_identity: u64, // TODO this should be part of the kind?
 }
 
 pub trait Matcher {

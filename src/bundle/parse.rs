@@ -178,7 +178,7 @@ impl PathRep {
 pub struct IndexBundle<'a> {
     pub bundles: Vec<BundleEntry<'a>>,
     pub files: Vec<FileInfo>,
-    pub head: Head,
+    pub reps: Vec<PathRep>,
 }
 
 impl<'a> IndexBundle<'a> {
@@ -186,15 +186,14 @@ impl<'a> IndexBundle<'a> {
         let (input, bundles) = length_count(le_u32, BundleEntry::parse)(input)?;
         let (input, files) = length_count(le_u32, FileInfo::parse)(input)?;
 
-        let (input, _reps) = length_count(le_u32, PathRep::parse)(input)?;
-        let (input, head) = Head::parse(input)?;
+        let (input, reps) = length_count(le_u32, PathRep::parse)(input)?;
 
         Ok((
             input,
             Self {
                 bundles,
                 files,
-                head,
+                reps,
             },
         ))
     }

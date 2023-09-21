@@ -80,6 +80,23 @@ impl From<Vec<u8>> for FileContents {
     }
 }
 
+pub trait Discard {
+    fn discard(&mut self, n: u64) -> Result<(), BundleFsError>;
+}
+
+impl Discard for FileContents {
+    fn discard(&mut self, n: u64) -> Result<(), BundleFsError> {
+        self.discard(n)
+    }
+}
+
+impl Discard for &mut &[u8] {
+    fn discard(&mut self, n: u64) -> Result<(), BundleFsError> {
+        **self = &self[self.len().min(n as usize)..];
+        Ok(())
+    }
+}
+
 pub trait BundleFs {
     fn get(&self, name: &str) -> Result<FileContents, BundleFsError>;
 }
