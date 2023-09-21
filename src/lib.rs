@@ -1,5 +1,7 @@
 mod bundle;
 mod dat;
+#[cfg(feature = "data")]
+pub mod data;
 #[cfg(feature = "pipeline")]
 pub(crate) mod font;
 mod hash;

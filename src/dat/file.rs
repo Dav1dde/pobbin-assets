@@ -133,6 +133,14 @@ impl<'a, R: Row> DatFile<'a, R> {
             .get(start..end)
             .map(|row| R::parse(row, vdr).unwrap()) // TODO: unwrap
     }
+
+    pub fn len(&self) -> usize {
+        self.row_count
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 impl<'a, R: Row> std::fmt::Debug for DatFile<'a, R> {

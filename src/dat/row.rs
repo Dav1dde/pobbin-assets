@@ -5,6 +5,8 @@ use crate::BundleFile;
 pub enum ParseError {
     #[error("not enough data")]
     NotEnoughData,
+    #[error("invalid data")]
+    InvalidData,
 }
 
 pub trait Row {

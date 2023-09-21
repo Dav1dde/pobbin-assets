@@ -1,9 +1,11 @@
 use super::{row::ParseError, utils::parse_u64, DatString, Row, VarDataReader};
+use crate::dat::utils::parse_u32;
 
 #[derive(Debug)]
 pub struct BaseItemTypes<'a> {
     pub id: DatString<'a>,
     pub name: DatString<'a>,
+    pub site_visibility: u32,
     pub item_visual_identity: u64,
 }
 
@@ -18,11 +20,13 @@ impl<'ty> Row for BaseItemTypes<'ty> {
     ) -> Result<Self::Item<'a>, ParseError> {
         let id = var_data.get_string_from(data, 0)?;
         let name = var_data.get_string_from(data, 32)?;
+        let site_visibility = parse_u32(data, 124)?;
         let item_visual_identity = parse_u64(data, 128)?;
 
         Ok(BaseItemTypes {
             id,
             name,
+            site_visibility,
             item_visual_identity,
         })
     }
@@ -98,5 +102,64 @@ impl<'ty> Row for Words<'ty> {
         let text = var_data.get_string_from(data, 4)?;
 
         Ok(Words { text })
+    }
+}
+
+#[derive(Debug)]
+pub struct SkillGems {
+    pub base_item_type: u64,
+    pub str: u32,
+    pub dex: u32,
+    pub int: u32,
+    pub color: Color,
+}
+
+#[derive(Debug)]
+pub enum Color {
+    Red,
+    Green,
+    Blue,
+    White,
+}
+
+impl Color {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Color::Red => "red",
+            Color::Green => "green",
+            Color::Blue => "blue",
+            Color::White => "white",
+        }
+    }
+}
+
+impl Row for SkillGems {
+    const FILE: &'static str = "Data/SkillGems.dat64";
+
+    type Item<'a> = SkillGems;
+
+    fn parse<'a>(
+        data: &'a [u8],
+        _var_data: VarDataReader<'a>,
+    ) -> Result<Self::Item<'a>, ParseError> {
+        let base_item_type = parse_u64(data, 0)?;
+        let str = parse_u32(data, 32)?;
+        let dex = parse_u32(data, 36)?;
+        let int = parse_u32(data, 40)?;
+        let color = match parse_u32(data, 195)? {
+            1 => Color::Red,
+            2 => Color::Green,
+            3 => Color::Blue,
+            4 => Color::White,
+            _ => return Err(ParseError::InvalidData),
+        };
+
+        Ok(SkillGems {
+            base_item_type,
+            str,
+            dex,
+            int,
+            color,
+        })
     }
 }

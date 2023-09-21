@@ -59,6 +59,13 @@ enum Action {
         #[bpaf(short('o'), argument("PATH"), fallback("./out".into()))]
         out: std::path::PathBuf,
     },
+    /// Runs the data extraction pipeline.
+    #[bpaf(command)]
+    Data {
+        /// Output directory.
+        #[bpaf(short('o'), argument("PATH"), fallback("./out".into()))]
+        out: std::path::PathBuf,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -91,6 +98,7 @@ fn main() -> anyhow::Result<()> {
         Action::Sha(file) => sha(fs, &file),
         Action::Extract(file) => extract(fs, &file),
         Action::Assets { out } => assets(fs, out),
+        Action::Data { out } => data(fs, out),
     }
 }
 
@@ -169,6 +177,15 @@ fn assets<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow:
             |image: &mut Image| image.flask(),
         )
         .execute()?;
+
+    Ok(())
+}
+
+fn data<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow::Result<()> {
+    let data = pobbin_assets::data::generate(fs)?;
+
+    let gems = std::fs::File::create(out.join("gems.json"))?;
+    serde_json::to_writer(gems, &data.gems)?;
 
     Ok(())
 }

@@ -6,9 +6,10 @@ edition = "2021"
 license = "GPL-3.0-or-later"
 
 [features]
-default = ["web", "pipeline"]
+default = ["web", "pipeline", "data"]
 web = ["dep:ureq"]
 pipeline = ["dep:magick_rust"]
+data = ["dep:url", "dep:serde", "dep:serde_json", "dep:serde_with", "dep:itertools"]
 
 [dependencies]
 libooz-sys = { path = "./libooz-sys/" }
@@ -27,6 +28,11 @@ tracing-subscriber = "0.3"
 
 ureq = { version = "2", optional = true }
 magick_rust = { version = "0.17", optional = true }
+url = { version = "2", optional = true }
+serde = { version = "1.0.188", features = ["derive"], optional = true }
+serde_json = { version = "1.0.107", optional = true }
+serde_with = { version = "3", optional = true }
+itertools = { version = "0.11", optional = true }
 
 
 [workspace]
