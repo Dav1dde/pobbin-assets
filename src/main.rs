@@ -155,6 +155,10 @@ fn assets<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow:
         .select(|file: &File| file.id.starts_with("Metadata/Items/Weapons"))
         .select(|file: &File| file.id.starts_with("Metadata/Items/Trinkets"))
         .select(|file: &File| file.kind == Kind::Unique)
+        .select(|file: &File| {
+            file.id
+                .starts_with("Art/2DArt/UIImages/InGame/AncestralTrial/PassiveTreeTattoos")
+        })
         .select(|file: &File| file.id.starts_with("Art/2DArt/UIImages/InGame/ItemsHeader"))
         .select(|file: &File| file.id.starts_with("Art/2DArt/UIImages/Common/IconDex"))
         .select(|file: &File| file.id.starts_with("Art/2DArt/UIImages/Common/IconInt"))
@@ -163,6 +167,11 @@ fn assets<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow:
             file.id.starts_with("art/2dart/skillicons/passives/")
                 && file.id.ends_with("dds")
                 && !file.id.contains("/4k/")
+        })
+        .select(|file: &File| {
+            file.id
+                .starts_with("art/2dart/skillicons/passives/masterypassiveicons/")
+                && file.id.ends_with("dds")
         })
         .select(|file: &File| {
             file.id
