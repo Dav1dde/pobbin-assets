@@ -5,6 +5,7 @@ use crate::dat::utils::parse_u32;
 pub struct BaseItemTypes<'a> {
     pub id: DatString<'a>,
     pub name: DatString<'a>,
+    pub drop_level: u32,
     pub site_visibility: u32,
     pub item_visual_identity: u64,
 }
@@ -20,12 +21,14 @@ impl<'ty> Row for BaseItemTypes<'ty> {
     ) -> Result<Self::Item<'a>, ParseError> {
         let id = var_data.get_string_from(data, 0)?;
         let name = var_data.get_string_from(data, 32)?;
+        let drop_level = parse_u32(data, 48)?;
         let site_visibility = parse_u32(data, 124)?;
         let item_visual_identity = parse_u64(data, 128)?;
 
         Ok(BaseItemTypes {
             id,
             name,
+            drop_level,
             site_visibility,
             item_visual_identity,
         })

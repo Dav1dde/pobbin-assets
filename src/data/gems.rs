@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 
 use anyhow::Context;
 use itertools::Itertools;
@@ -13,19 +13,30 @@ pub struct Gems(Vec<Gem>);
 
 #[derive(Debug, Serialize)]
 pub struct Gem {
+    /// Id of the gem.
     pub id: String,
+    /// Name of the gem.
     pub name: String,
+    /// Mininum level for the level 1 gem.
+    pub level: u32,
+    /// Color of the gem, one of `red`, `green`, `blue`, `white`.
     pub color: &'static str,
+    /// Vendors selling the gem and after which quest they unlock.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub vendors: Vec<Vendor>,
 }
 
 #[derive(Debug, Serialize)]
 pub struct Vendor {
+    /// Name of the quest which unlocks this vendor.
     pub quest: String,
+    /// Act of the vendor.
     pub act: u8,
-    pub class_ids: Option<Vec<String>>,
+    /// Name of the vendor in this specific act.
     pub npc: String,
+    /// List of classes this vendor unlocks for, `None` means all.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub class_ids: Option<BTreeSet<String>>,
 }
 
 pub fn generate<F: BundleFs>(fs: F) -> anyhow::Result<Gems> {
@@ -62,7 +73,7 @@ pub fn generate<F: BundleFs>(fs: F) -> anyhow::Result<Gems> {
         let id = String::try_from(&bit.id)?;
         let name = String::try_from(&bit.name)?;
 
-        let rewards = vendor_gem_rewards
+        let mut vendors = vendor_gem_rewards
             .get(&id)
             .unwrap_or(&Vec::new())
             .iter()
@@ -72,15 +83,20 @@ pub fn generate<F: BundleFs>(fs: F) -> anyhow::Result<Gems> {
                 class_ids: q.class_ids.clone(),
                 npc: q.npc.clone(),
             })
-            .collect();
+            .collect::<Vec<_>>();
+
+        vendors.sort_unstable_by(|a, b| (a.act, &b.quest).cmp(&(b.act, &b.quest)));
 
         gems.push(Gem {
             id,
             name,
+            level: bit.drop_level,
             color: sg.color.as_str(),
-            vendors: rewards,
+            vendors,
         })
     }
+    gems.sort_unstable_by(|a, b| a.id.cmp(&b.id));
+
     Ok(Gems(gems))
 }
 
@@ -108,6 +124,6 @@ struct VendorGemReward {
     act: u8,
     #[serde(rename = "class ids")]
     #[serde_as(as = "Option<StringWithSeparator::<CommaSeparator, String>>")]
-    class_ids: Option<Vec<String>>,
+    class_ids: Option<BTreeSet<String>>,
     npc: String,
 }
