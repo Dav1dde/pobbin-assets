@@ -141,6 +141,7 @@ fn assets<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow:
         anyhow::bail!("out path '{}' is not a directory", out.display());
     }
 
+    #[rustfmt::skip]
     pobbin_assets::Pipeline::new(fs, out)
         .font("Art/2DArt/Fonts/Fontin-SmallCaps.ttf")
         .select(|file: &File| file.id.starts_with("Metadata/Items/Gems"))
@@ -180,10 +181,12 @@ fn assets<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow:
         .select(|file: &File| {
             file.id.starts_with("Art/2DArt/UIImages/InGame/") && file.id.ends_with("ItemSymbol")
         })
-        .rename(|file| file.id.ends_with("BootsAtlas1").then_some("TwoTonedEvEs"))
-        .rename(|file| file.id.ends_with("BootsAtlas2").then_some("TwoTonedArEv"))
-        .rename(|file| file.id.ends_with("BootsAtlas3").then_some("TwoTonedArEs"))
-        .rename(|file| file.name.contains('’').then(|| file.name.replace('’', "'")))
+        .rename(|file| file.id.ends_with("BootsAtlas1").then_some("TwoTonedEvEs").map(Into::into))
+        .rename(|file| file.id.ends_with("BootsAtlas2").then_some("TwoTonedArEv").map(Into::into))
+        .rename(|file| file.id.ends_with("BootsAtlas3").then_some("TwoTonedArEs").map(Into::into))
+        .rename(|file| file.name.contains('’').then(|| file.name.replace('’', "'")).map(Into::into))
+        .rename(|file| file.id.starts_with("Metadata/Items/Gems").then_some(file.name.as_ref()).map(Into::into))
+        .rename(|file| file.id.starts_with("Metadata/Items/Gems").then_some(file.id.as_ref()).map(Into::into))
         .postprocess(
             |file: &File| {
                 file.id.starts_with("Metadata/Items/Flasks") || file.id.starts_with("UniqueFlask")

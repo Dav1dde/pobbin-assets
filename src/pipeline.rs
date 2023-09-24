@@ -5,8 +5,7 @@ use crate::{
     ItemVisualIdentity, UniqueStashLayout, Words,
 };
 
-type CowStr = Cow<'static, str>;
-type DynRenamer = dyn Fn(&File) -> Option<CowStr>;
+type DynRenamer = dyn for<'a> Fn(&'a File<'a>) -> Option<Cow<'a, str>>;
 
 pub struct Pipeline<F: BundleFs> {
     fs: F,
@@ -39,12 +38,11 @@ impl<F: BundleFs> Pipeline<F> {
         self
     }
 
-    pub fn rename<T>(&mut self, renamer: impl Fn(&File) -> Option<T> + 'static) -> &mut Self
+    pub fn rename<T>(&mut self, renamer: T) -> &mut Self
     where
-        T: Into<CowStr>,
+        T: for<'a> Fn(&'a File<'a>) -> Option<Cow<'a, str>> + 'static,
     {
-        self.rename
-            .push(Box::new(move |file| renamer(file).map(Into::into)));
+        self.rename.push(Box::new(renamer));
         self
     }
 
@@ -142,18 +140,11 @@ impl<F: BundleFs> Pipeline<F> {
                 }
             }
 
-            let mut name = None;
-            for rename in &self.rename {
-                if let Some(new_name) = rename(&item) {
-                    name = Some(new_name);
-                }
+            for name in self.names(&item) {
+                self.write_image(&name, &dds)?;
+                tracing::debug!("generated file '{name}'");
+                total += 1;
             }
-            let name = name.unwrap_or(item.name);
-
-            self.write_image(&name, &dds)?;
-
-            tracing::debug!("generated file '{name}'");
-            total += 1;
         }
 
         for file in self.ui_images(&index)? {
@@ -312,6 +303,15 @@ impl<F: BundleFs> Pipeline<F> {
             .filter(|file| self.selectors.iter().any(|s| s.matches(file)));
 
         Ok(files)
+    }
+
+    fn names<'a>(&'a self, file: &'a File) -> impl Iterator<Item = Cow<'a, str>> + 'a {
+        let mut renames = self.rename.iter().flat_map(|r| r(file)).peekable();
+        if renames.peek().is_some() {
+            itertools::Either::Left(renames)
+        } else {
+            itertools::Either::Right(std::iter::once(Cow::Borrowed(file.name.as_ref())))
+        }
     }
 }
 
