@@ -98,7 +98,7 @@ impl<F: BundleFs> Pipeline<F> {
             let name = words
                 .get(unique.words as usize)
                 .expect("word for unique")
-                .text;
+                .text2;
             let id = vis
                 .get(unique.item_visual_identity as usize)
                 .expect("vis for unique")

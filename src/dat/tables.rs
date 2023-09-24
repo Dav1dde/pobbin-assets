@@ -90,7 +90,7 @@ impl Row for UniqueStashLayout {
 
 #[derive(Debug)]
 pub struct Words<'a> {
-    pub text: DatString<'a>,
+    pub text2: DatString<'a>,
 }
 
 impl<'ty> Row for Words<'ty> {
@@ -102,9 +102,9 @@ impl<'ty> Row for Words<'ty> {
         data: &'a [u8],
         var_data: VarDataReader<'a>,
     ) -> Result<Self::Item<'a>, ParseError> {
-        let text = var_data.get_string_from(data, 4)?;
+        let text2 = var_data.get_string_from(data, 48)?;
 
-        Ok(Words { text })
+        Ok(Words { text2 })
     }
 }
 
