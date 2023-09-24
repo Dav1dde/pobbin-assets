@@ -44,6 +44,10 @@ impl Dds {
         )
     }
 
+    pub fn resize(&mut self, width: usize, height: usize) {
+        self.wand.resize_image(width, height, 0);
+    }
+
     pub fn write_blob(&self, format: &str) -> Result<Vec<u8>, MagickError> {
         self.wand.write_image_blob(format)
     }

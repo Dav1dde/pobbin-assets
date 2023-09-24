@@ -183,10 +183,16 @@ impl<F: BundleFs> Pipeline<F> {
                 continue;
             };
 
-            let Ok(dds) = image::Dds::try_from(&*dds) else {
+            let Ok(mut dds) = image::Dds::try_from(&*dds) else {
                 tracing::warn!("unable to read dds {}", file.id);
                 continue;
             };
+
+            for (m, pp) in &self.postprocess {
+                if m.matches(&file) {
+                    pp.postprocess(&mut dds)?;
+                }
+            }
 
             self.write_image(file.id.strip_suffix(".dds").unwrap_or(&file.id), &dds)?;
 

@@ -171,11 +171,6 @@ fn assets<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow:
         })
         .select(|file: &File| {
             file.id
-                .starts_with("art/2dart/skillicons/passives/masterypassiveicons/")
-                && file.id.ends_with("dds")
-        })
-        .select(|file: &File| {
-            file.id
                 .starts_with("Art/2DArt/UIImages/InGame/ItemsSeparator")
         })
         .select(|file: &File| {
@@ -192,6 +187,16 @@ fn assets<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow:
                 file.id.starts_with("Metadata/Items/Flasks") || file.id.starts_with("UniqueFlask")
             },
             |image: &mut Image| image.flask(),
+        )
+        .postprocess(
+            |file: &File| {
+                file.id
+                    .starts_with("art/2dart/skillicons/passives/")
+            },
+            |image: &mut Image| {
+                image.resize(32, 32);
+                Ok(())
+            }
         )
         .execute()?;
 
