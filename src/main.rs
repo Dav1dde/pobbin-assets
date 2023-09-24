@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use bpaf::Bpaf;
 use sha2::{Digest, Sha256};
 
@@ -141,6 +143,25 @@ fn assets<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow:
         anyhow::bail!("out path '{}' is not a directory", out.display());
     }
 
+    fn pob_item_name<'a>(file: &'a File<'a>) -> Option<Cow<'a, str>> {
+        let needs_replacement = file.name.contains(|c| matches!(c, '’' | 'ö'));
+        if needs_replacement {
+            let new_name = file
+                .name
+                .chars()
+                .map(|c| match c {
+                    '’' => '\'',
+                    'ö' => 'o',
+                    c => c,
+                })
+                .collect();
+
+            return Some(Cow::Owned(new_name));
+        }
+
+        None
+    }
+
     #[rustfmt::skip]
     pobbin_assets::Pipeline::new(fs, out)
         .font("Art/2DArt/Fonts/Fontin-SmallCaps.ttf")
@@ -176,10 +197,10 @@ fn assets<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow:
         .select(|file: &File| {
             file.id.starts_with("Art/2DArt/UIImages/InGame/") && file.id.ends_with("ItemSymbol")
         })
+        .rename(pob_item_name)
         .rename(|file| file.id.ends_with("BootsAtlas1").then_some("TwoTonedEvEs").map(Into::into))
         .rename(|file| file.id.ends_with("BootsAtlas2").then_some("TwoTonedArEv").map(Into::into))
         .rename(|file| file.id.ends_with("BootsAtlas3").then_some("TwoTonedArEs").map(Into::into))
-        .rename(|file| file.name.contains('’').then(|| file.name.replace('’', "'")).map(Into::into))
         .rename(|file| file.id.starts_with("Metadata/Items/Gems").then_some(file.name.as_ref()).map(Into::into))
         .rename(|file| file.id.starts_with("Metadata/Items/Gems").then_some(file.id.as_ref()).map(Into::into))
         .postprocess(
