@@ -143,6 +143,18 @@ fn assets<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow:
         anyhow::bail!("out path '{}' is not a directory", out.display());
     }
 
+    let progress = indicatif::ProgressBar::new_spinner().with_style(
+        indicatif::ProgressStyle::default_spinner().tick_strings(&[
+            "▹▹▹▹▹",
+            "▸▹▹▹▹",
+            "▹▸▹▹▹",
+            "▹▹▸▹▹",
+            "▹▹▹▸▹",
+            "▹▹▹▹▸",
+            "▪▪▪▪▪",
+        ]),
+    );
+
     fn pob_item_name<'a>(file: &'a File<'a>) -> Option<Cow<'a, str>> {
         let needs_replacement = file.name.contains(|c| matches!(c, '’' | 'ö'));
         if needs_replacement {
@@ -164,6 +176,12 @@ fn assets<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow:
 
     #[rustfmt::skip]
     pobbin_assets::Pipeline::new(fs, out)
+        .progress(move |total, name| {
+            if total % 10 == 0 {
+                progress.inc(1);
+            }
+            progress.set_message(format!("{total} / {name}"));
+        })
         .font("Art/2DArt/Fonts/Fontin-SmallCaps.ttf")
         .select(|file: &File| file.id.starts_with("Metadata/Items/Gems"))
         .select(|file: &File| file.id.starts_with("Metadata/Items/Belts"))

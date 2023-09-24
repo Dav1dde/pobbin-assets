@@ -1,4 +1,9 @@
-use std::{borrow::Cow, io::Write, path::PathBuf};
+use std::{
+    borrow::Cow,
+    io::Write,
+    path::PathBuf,
+    sync::atomic::{AtomicUsize, Ordering},
+};
 
 use crate::{
     image, BaseItemTypes, Bundle, BundleFs, DatString, Image, ImageError, IndexBundle,
@@ -6,10 +11,12 @@ use crate::{
 };
 
 type DynRenamer = dyn for<'a> Fn(&'a File<'a>) -> Option<Cow<'a, str>>;
+type DynProgress = dyn Fn(usize, &str);
 
 pub struct Pipeline<F: BundleFs> {
     fs: F,
     out: PathBuf,
+    progress: Box<DynProgress>,
     selectors: Vec<Box<dyn Matcher>>,
     postprocess: Vec<(Box<dyn Matcher>, Box<dyn Postprocess>)>,
     rename: Vec<Box<DynRenamer>>,
@@ -21,11 +28,17 @@ impl<F: BundleFs> Pipeline<F> {
         Self {
             fs,
             out: out.into(),
+            progress: Box::new(|_, _| {}),
             selectors: Vec::new(),
             postprocess: Vec::new(),
             rename: Vec::new(),
             fonts: Vec::new(),
         }
+    }
+
+    pub fn progress(&mut self, progress: impl Fn(usize, &str) + 'static) -> &mut Self {
+        self.progress = Box::new(progress);
+        self
     }
 
     pub fn font(&mut self, font: impl Into<String>) -> &mut Self {
@@ -107,7 +120,12 @@ impl<F: BundleFs> Pipeline<F> {
                 (base, vis.get(idx))
             });
 
-        let mut total = 0usize;
+        let total = AtomicUsize::new(0);
+        let increment = |name: &str| {
+            let total = total.fetch_add(1, Ordering::Relaxed) + 1;
+            (self.progress)(total, name);
+        };
+
         for (item, vis) in files {
             let Some(vis) = vis else {
                 tracing::warn!("item '{item:?}' has no visual identity");
@@ -143,7 +161,7 @@ impl<F: BundleFs> Pipeline<F> {
             for name in self.names(&item) {
                 self.write_image(&name, &dds)?;
                 tracing::debug!("generated file '{name}'");
-                total += 1;
+                increment(&name);
             }
         }
 
@@ -173,7 +191,7 @@ impl<F: BundleFs> Pipeline<F> {
             self.write_image(&name, &dds)?;
 
             tracing::debug!("generated art file '{name}'");
-            total += 1;
+            increment(&name);
         }
 
         // TODO: this only works for dds atm, change it when necessary
@@ -194,10 +212,11 @@ impl<F: BundleFs> Pipeline<F> {
                 }
             }
 
-            self.write_image(file.id.strip_suffix(".dds").unwrap_or(&file.id), &dds)?;
+            let name = file.id.strip_suffix(".dds").unwrap_or(&file.id);
+            self.write_image(name, &dds)?;
 
             tracing::debug!("generated file '{}'", file.id);
-            total += 1;
+            increment(name);
         }
 
         for font in &self.fonts {
@@ -209,10 +228,13 @@ impl<F: BundleFs> Pipeline<F> {
             self.write_font(font, &file)?;
 
             tracing::debug!("generated font '{font}'");
-            total += 1;
+            increment(font);
         }
 
-        tracing::info!("extracted a total of {total} assets");
+        tracing::info!(
+            "extracted a total of {} assets",
+            total.load(Ordering::Relaxed)
+        );
 
         Ok(())
     }

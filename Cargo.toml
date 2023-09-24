@@ -8,7 +8,7 @@ license = "GPL-3.0-or-later"
 [features]
 default = ["web", "pipeline", "data"]
 web = ["dep:ureq"]
-pipeline = ["dep:magick_rust"]
+pipeline = ["dep:magick_rust", "dep:indicatif"]
 data = ["dep:url", "dep:serde", "dep:serde_json", "dep:serde_with", "dep:itertools"]
 
 [dependencies]
@@ -33,6 +33,7 @@ serde = { version = "1.0.188", features = ["derive"], optional = true }
 serde_json = { version = "1.0.107", optional = true }
 serde_with = { version = "3", optional = true }
 itertools = { version = "0.11", optional = true }
+indicatif = { version = "0.17", optional = true }
 
 
 [workspace]
