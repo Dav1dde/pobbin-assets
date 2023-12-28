@@ -240,7 +240,7 @@ mod web {
         }
 
         pub fn cdn(version: &str) -> Self {
-            Self::new(format!("http://patchcdn.pathofexile.com/{version}/"))
+            Self::new(format!("http://patch.poecdn.com/{version}/"))
         }
     }
 

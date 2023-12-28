@@ -27,7 +27,7 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 
 ureq = { version = "2", optional = true }
-magick_rust = { version = "0.17", optional = true }
+magick_rust = { version = "0.19", optional = true }
 url = { version = "2", optional = true }
 serde = { version = "1.0.188", features = ["derive"], optional = true }
 serde_json = { version = "1.0.107", optional = true }
