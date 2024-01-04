@@ -35,6 +35,29 @@ impl Dds {
         Ok(())
     }
 
+    pub fn gem(&mut self) -> Result<(), MagickError> {
+        // This is just a quick workaround for the new gem format, this should be implemented
+        // properly with a separate gem pipeline which also supports the shaded transfigured gems.
+        let width = self.wand.get_image_width();
+        let height = self.wand.get_image_height();
+
+        // A regular gem.
+        if width < height + 10 {
+            return Ok(());
+        }
+
+        let width = width / 3;
+
+        let layer = self.wand.clone();
+
+        layer.crop_image(width, height, width as isize * 2, 0)?;
+        self.wand.crop_image(width, height, 0, 0)?;
+        self.wand
+            .compose_images(&layer, CompositeOperator_DstOverCompositeOp, true, 0, 0)?;
+
+        Ok(())
+    }
+
     pub fn crop(&mut self, pos: (u32, u32), size: (u32, u32)) -> Result<(), MagickError> {
         self.wand.crop_image(
             size.0 as usize,

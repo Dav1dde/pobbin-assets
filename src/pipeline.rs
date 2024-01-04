@@ -187,11 +187,11 @@ impl<F: BundleFs> Pipeline<F> {
 
             dds.crop(position, size)?;
 
-            let name = String::try_from(file.name)?;
-            self.write_image(&name, &dds)?;
+            let name = &file.name;
+            self.write_image(name, &dds)?;
 
             tracing::debug!("generated art file '{name}'");
-            increment(&name);
+            increment(name);
         }
 
         // TODO: this only works for dds atm, change it when necessary

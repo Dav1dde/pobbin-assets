@@ -227,6 +227,10 @@ fn assets<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow:
         .rename(|file| file.id.starts_with("Metadata/Items/Gems").then_some(file.name.as_ref()).map(Into::into))
         .rename(|file| file.id.starts_with("Metadata/Items/Gems").then_some(file.id.as_ref()).map(Into::into))
         .postprocess(
+            |file: &File| file.id.starts_with("Metadata/Items/Gems"),
+            |image: &mut Image| image.gem(),
+        )
+        .postprocess(
             |file: &File| {
                 file.id.starts_with("Metadata/Items/Flasks") || file.id.starts_with("UniqueFlask")
             },
