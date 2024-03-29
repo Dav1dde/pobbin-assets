@@ -3,7 +3,7 @@ use std::collections::{BTreeSet, HashMap};
 use anyhow::Context;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use serde_with::{formats::CommaSeparator, DisplayFromStr, StringWithSeparator};
+use serde_with::{formats::CommaSeparator, DefaultOnNull, DisplayFromStr, StringWithSeparator};
 
 use crate::{BaseItemTypes, Bundle, BundleFs, SkillGems};
 
@@ -118,6 +118,7 @@ fn fetch_vendor_gem_rewards() -> anyhow::Result<HashMap<String, Vec<VendorGemRew
 #[derive(Debug, Deserialize)]
 struct VendorGemReward {
     #[serde(rename = "metadata id")]
+    #[serde_as(as = "DefaultOnNull")]
     id: String,
     quest: String,
     #[serde_as(as = "DisplayFromStr")]

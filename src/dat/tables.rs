@@ -149,7 +149,7 @@ impl Row for SkillGems {
         let str = parse_u32(data, 32)?;
         let dex = parse_u32(data, 36)?;
         let int = parse_u32(data, 40)?;
-        let color = match parse_u32(data, 195)? {
+        let color = match parse_u32(data, 83)? {
             1 => Color::Red,
             2 => Color::Green,
             3 => Color::Blue,
