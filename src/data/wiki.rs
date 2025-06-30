@@ -6,7 +6,7 @@ use serde::{
     Deserialize,
 };
 
-const WIKI_BASE: &str = "https://www.poewiki.net/";
+const WIKI_BASE: &str = "https://www.poe2wiki.net/";
 
 pub fn cargo_fetch<T>(
     query: &[(&str, &str)],

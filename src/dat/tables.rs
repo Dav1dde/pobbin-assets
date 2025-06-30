@@ -11,7 +11,7 @@ pub struct BaseItemTypes<'a> {
 }
 
 impl<'ty> Row for BaseItemTypes<'ty> {
-    const FILE: &'static str = "Data/BaseItemTypes.dat64";
+    const FILE: &'static str = "Data/BaseItemTypes.datc64";
 
     type Item<'a> = BaseItemTypes<'a>;
 
@@ -43,7 +43,7 @@ pub struct ItemVisualIdentity<'a> {
 }
 
 impl<'ty> Row for ItemVisualIdentity<'ty> {
-    const FILE: &'static str = "Data/ItemVisualIdentity.dat64";
+    const FILE: &'static str = "Data/ItemVisualIdentity.datc64";
 
     type Item<'a> = ItemVisualIdentity<'a>;
 
@@ -70,7 +70,7 @@ pub struct UniqueStashLayout {
 }
 
 impl Row for UniqueStashLayout {
-    const FILE: &'static str = "Data/UniqueStashLayout.dat64";
+    const FILE: &'static str = "Data/UniqueStashLayout.datc64";
 
     type Item<'a> = UniqueStashLayout;
 
@@ -94,7 +94,7 @@ pub struct Words<'a> {
 }
 
 impl<'ty> Row for Words<'ty> {
-    const FILE: &'static str = "Data/Words.dat64";
+    const FILE: &'static str = "Data/Words.datc64";
 
     type Item<'a> = Words<'a>;
 
@@ -137,7 +137,7 @@ impl Color {
 }
 
 impl Row for SkillGems {
-    const FILE: &'static str = "Data/SkillGems.dat64";
+    const FILE: &'static str = "Data/SkillGems.datc64";
 
     type Item<'a> = SkillGems;
 
