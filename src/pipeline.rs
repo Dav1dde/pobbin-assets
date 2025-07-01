@@ -93,24 +93,27 @@ impl<F: BundleFs> Pipeline<F> {
             name: base.name.try_into().expect("string"),
         });
 
-        let uniques = uniques.iter().map(|unique| {
-            // TODO: this is trash, vis gets quereid later again, no error handling
-            let name = words
-                .get(unique.words as usize)
-                .expect("word for unique")
-                .text2;
-            let id = vis
-                .get(unique.item_visual_identity as usize)
-                .expect("vis for unique")
-                .id;
+        let uniques = uniques
+            .iter()
+            .filter(|unique| unique.show_if_empty_challenge_league)
+            .map(|unique| {
+                // TODO: this is trash, vis gets quereid later again, no error handling
+                let name = words
+                    .get(unique.words as usize)
+                    .expect("word for unique")
+                    .text2;
+                let id = vis
+                    .get(unique.item_visual_identity as usize)
+                    .expect("vis for unique")
+                    .id;
 
-            File {
-                kind: Kind::Unique,
-                id: id.try_into().expect("string"),
-                item_visual_identity: unique.item_visual_identity,
-                name: name.try_into().expect("string"),
-            }
-        });
+                File {
+                    kind: Kind::Unique,
+                    id: id.try_into().expect("string"),
+                    item_visual_identity: unique.item_visual_identity,
+                    name: name.try_into().expect("string"),
+                }
+            });
 
         let files = bases
             .chain(uniques)
@@ -319,7 +322,7 @@ impl<F: BundleFs> Pipeline<F> {
     fn bundle_files<'a, F2: BundleFs>(
         &'a self,
         index: &'a IndexBundle<F2>,
-    ) -> anyhow::Result<impl Iterator<Item = File<'static>> + '_> {
+    ) -> anyhow::Result<impl Iterator<Item = File<'static>> + 'a> {
         let files = index
             .files()?
             .map(|file| File {
