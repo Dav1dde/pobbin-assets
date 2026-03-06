@@ -209,7 +209,7 @@ struct FileRef {
 }
 
 fn decompress(
-    mut file: (impl std::io::Read + Discard),
+    mut file: impl std::io::Read + Discard,
     fref: Option<&FileRef>,
 ) -> BundleResult<Vec<u8>> {
     let head = parse::Head::read(&mut file).map_err(|err| match err {
@@ -226,7 +226,7 @@ fn decompress(
     // First chunk that includes a part of the targeted file.
     let num_chunk_start = file_offset / chunk_unpacked_size;
     // Last chunk that includes a part of the targeted file.
-    let num_chunk_end = div_ceil(file_offset + file_size, chunk_unpacked_size);
+    let num_chunk_end = (file_offset + file_size).div_ceil(chunk_unpacked_size);
 
     let chunks_start: usize = head.payload.chunk_sizes[..num_chunk_start]
         .iter()
@@ -258,8 +258,4 @@ fn decompress(
 
     content.truncate(file_size);
     Ok(content)
-}
-
-fn div_ceil(a: usize, b: usize) -> usize {
-    (a + b - 1) / b
 }

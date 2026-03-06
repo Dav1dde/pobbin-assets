@@ -66,10 +66,6 @@ pub fn generate<F: BundleFs>(fs: F) -> anyhow::Result<Gems> {
             .get(sg.base_item_type as usize)
             .with_context(|| format!("missing base item type {} for gem", sg.base_item_type))?;
 
-        if bit.site_visibility == 0 {
-            continue;
-        }
-
         let id = String::try_from(&bit.id)?;
         let name = String::try_from(&bit.name)?;
 
