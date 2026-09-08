@@ -232,6 +232,8 @@ fn assets<F: pobbin_assets::BundleFs>(fs: F, out: std::path::PathBuf) -> anyhow:
         .rename(|file| file.id.ends_with("Rings/Ring12").then_some("TwoStoneFL").map(Into::into))
         .rename(|file| file.id.ends_with("Rings/Ring13").then_some("TwoStoneCL").map(Into::into))
         .rename(|file| file.id.ends_with("Rings/Ring14").then_some("TwoStoneFC").map(Into::into))
+        .rename(|file| file.id.ends_with("StormBladeOneHand").then_some("Energy Blade One Handed").map(Into::into))
+        .rename(|file| file.id.ends_with("StormBladeTwoHand").then_some("Energy Blade Two Handed").map(Into::into))
         .rename(|file| file.id.starts_with("Metadata/Items/Gems").then_some(file.name.as_ref()).map(Into::into))
         .rename(|file| file.id.starts_with("Metadata/Items/Gems").then_some(file.id.as_ref()).map(Into::into))
         .postprocess(
