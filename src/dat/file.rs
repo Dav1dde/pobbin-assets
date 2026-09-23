@@ -16,8 +16,10 @@ impl<'a> VarDataReader<'a> {
     pub fn get_string(&self, offset: u64) -> Result<DatString<'a>, ParseError> {
         let offset = offset as usize;
         let idx = self.0[offset..]
-            .chunks_exact(2)
-            .position(|a| a == [0, 0])
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .position(|a| *a == [0, 0])
             .map(|idx| idx * 2)
             .unwrap_or(self.0.len());
         let data = self
@@ -49,7 +51,9 @@ impl<'a> DatString<'a> {
     fn chars(&self) -> impl Iterator<Item = Result<char, std::char::DecodeUtf16Error>> + '_ {
         let u16s = self
             .0
-            .chunks_exact(2)
+            .as_chunks::<2>()
+            .0
+            .iter()
             .map(|c| u16::from_le_bytes([c[0], c[1]]));
         char::decode_utf16(u16s)
     }
@@ -57,7 +61,9 @@ impl<'a> DatString<'a> {
     fn chars_rev(&self) -> impl Iterator<Item = Result<char, std::char::DecodeUtf16Error>> + '_ {
         let u16s = self
             .0
-            .chunks_exact(2)
+            .as_chunks::<2>()
+            .0
+            .iter()
             .rev()
             .map(|c| u16::from_le_bytes([c[0], c[1]]));
         char::decode_utf16(u16s)
